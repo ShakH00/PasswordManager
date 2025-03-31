@@ -33,3 +33,27 @@ function authenticateToken(req, res, next) {
     return res.status(403).json({ error: 'Invalid or expired token.' })
   }
 }
+// Routes (Define a basic route)
+app.get('/', (req, res) => {
+    // Response to a client's GET request
+    res.send('Hello from the backend!')
+})
+// Test route for DB query
+app.get('/test-db', async (req, res) => {
+    try {
+      const result = await pool.query('SELECT NOW()') // Test query to get the current time
+      res.json({
+        message: 'Database connection successful!',
+        time: result.rows[0].now,
+      })
+    } catch (error) {
+      console.error('Database connection error: ', error.message)
+      res.status(500).json({ error: 'Database connection failed.' })
+    }
+})
+
+// Start the server
+app.listen(PORT, () => {
+    // PORT to listen for requests
+    console.log(`Server is running on http://localhost:${PORT}`)
+  })
