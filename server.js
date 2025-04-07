@@ -4,6 +4,7 @@ const cors = require('cors') // Import cross-origin resource sharing library (al
 const pool = require('./db') // Import the connection pool from db.js
 const bcrypt = require('bcrypt') // Import bcrypt for password hashing
 const jwt = require('jsonwebtoken') // Import jwt for authentication handling
+require('dotenv').config() // Get JWT secret from here
 
 // Create an instance of express
 const app = express() // Main object of the server (express instance)
@@ -68,12 +69,17 @@ app.post('/register', async (req, res) => {
     const newUser = await pool.query(
       `INSERT INTO users (username, email, password) 
        VALUES ($1, $2, $3)
-       RETURNING uid, username, email, profile_path'
+       RETURNING uid, username, email, profile_path
       `, [username, email, hashedPassword]
+    )
+    // Create default vault
+    await pool.query(
+      `INSERT INTO vaults (uid, name) VALUES ($1, $2)`,
+      [uid, 'Default Vault']
     )
     res.status(201).json({
       message: 'User registered successfully.',
-      user: result.rows[0]
+      user: newUser.rows[0]
     })
   } catch (error) {
     console.error('Registration error: ', error.message)
@@ -127,7 +133,18 @@ app.get('/me', authenticateToken, async (req, res) => {
     res.status(500).json({error: 'Error fetching user data.'})
   }
 })
-
+// Endpoint to get vault information
+app.get('/vaults', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT vid, name FROM vaults WHERE uid = $1', [req.user.uid]
+    )
+    res.json(rows)
+  } catch (error) {
+    console.error('Error fetching vaults: ', error.message)
+    res.status(500).json({error: 'Could not retrieve vaults'})
+  }
+})
 // Start the server
 app.listen(PORT, () => {
     // PORT to listen for requests
