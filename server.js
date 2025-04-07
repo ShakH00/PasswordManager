@@ -77,10 +77,11 @@ app.post('/register', async (req, res) => {
     }
     const uid = newUser.rows[0].uid
     // Create default vault
-    await pool.query(
-      `INSERT INTO vaults (uid, name) VALUES ($1, $2)`,
+    const defaultVault = await pool.query(
+      `INSERT INTO vaults (uid, name) VALUES ($1, $2) RETURNING vid`,
       [uid, 'Default Vault']
     )
+    const vid = defaultVault.rows[0].vid
     // Default passwords
     await pool.query(
       `INSERT INTO passwords(vid, name, url, username, password) VALUES
@@ -202,6 +203,20 @@ app.get('/vaults/:vid/passwords', authenticateToken, async (req, res) => {
       'SELECT * FROM vaults WHERE vid = $1 AND uid = $2',
       [vid, req.user.uid]
     )
+    if (vaultCheck.rows.length === 0) {
+      return res.status(403).json({error: 'Access denied.'})
+    }
+    // Fetch passwords for the vault
+    const passwords = await pool.query(
+      `SELECT pid, name, url, username, password
+       FROM passwords
+       WHERE vid = $1`,
+       [vid]
+    )
+    res.json(passwords.rows)
+  } catch (error) {
+    console.error("Error fetching passwords: ", error.message)
+    res.status(500).json({error: 'Could not fetch passwords.'})
   }
 })
 
