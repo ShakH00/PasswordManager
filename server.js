@@ -72,10 +72,24 @@ app.post('/register', async (req, res) => {
        RETURNING uid, username, email, profile_path
       `, [username, email, hashedPassword]
     )
+    if (!newUser.rows[0]) {
+      throw new Error('Failed to create user')
+    }
+    const uid = newUser.rows[0].uid
     // Create default vault
     await pool.query(
       `INSERT INTO vaults (uid, name) VALUES ($1, $2)`,
       [uid, 'Default Vault']
+    )
+    // Default passwords
+    await pool.query(
+      `INSERT INTO passwords(vid, name, url, username, password) VALUES
+      ($1, 'YouTube', 'https://youtube.com', $2, ''),
+      ($1, 'Instagram', 'https://instagram.com', $2, ''),
+      ($1, 'Outlook', 'https://outlook.com', $2, ''),
+      ($1, 'Google', 'https://accounts.google.com', $2, ''),
+      ($1, 'Facebook', 'https://facebook.com', $2, '')
+      `, [vid, email]
     )
     res.status(201).json({
       message: 'User registered successfully.',
@@ -139,12 +153,58 @@ app.get('/vaults', authenticateToken, async (req, res) => {
     const result = await pool.query(
       'SELECT vid, name FROM vaults WHERE uid = $1', [req.user.uid]
     )
-    res.json(rows)
+    res.json(result.rows)
   } catch (error) {
     console.error('Error fetching vaults: ', error.message)
     res.status(500).json({error: 'Could not retrieve vaults'})
   }
 })
+// Endpoint to modify passwords ########## UNTESTED #############
+app.put('/passwords/:pid', authenticateToken, async (req, res) => {
+  const {pid} = req.params
+  const {name, username, password, url} = req.body
+
+  try {
+    const entry = await pool.query(
+      `
+      SELECT p.*, v.uid FROM passwords p
+      JOIN vaults v ON p.vid = v.vid
+      WHERE p.pid = $1
+      `, [pid]
+    )
+    if (entry.rows.length === 0) {
+      return res.status(404).json({error: 'Password entry not found.'})
+    }
+    const passwordEntry = entry.rows[0]
+    if (passwordEntry.uid != req.user.uid) {
+      return res.status(403).json({error: 'Unauthorized to modify this password'})
+    }
+    // Update password
+    await pool.query(
+      `UPDATE passwords
+       SET name = $1, username = $2, password = $3, url = $4
+       WHERE pid = $5`,
+       [name, username, password, url, pid]
+    )
+    res.json({message: 'Password entry updated.'})
+  } catch (error) {
+    console.error('Update error: ', error.message)
+    res.status(500).json({error: 'Failed to update password'})
+  }
+})  
+// Endpoint to get all paswords for the default vault
+app.get('/vaults/:vid/passwords', authenticateToken, async (req, res) => {
+  const {vid} = req.params
+
+  try{
+    // Check if vault belongs to user
+    const vaultCheck = await pool.query(
+      'SELECT * FROM vaults WHERE vid = $1 AND uid = $2',
+      [vid, req.user.uid]
+    )
+  }
+})
+
 // Start the server
 app.listen(PORT, () => {
     // PORT to listen for requests
