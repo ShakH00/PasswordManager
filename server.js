@@ -10,7 +10,7 @@ const app = express() // Main object of the server (express instance)
 const PORT = process.env.PORT || 5000 // process.env.PORT allows for dynamic assignment in a production environment
 const corsOptions = {
   origin: 'http://localhost:5173',
-  credentials: true, // Enable credentials (cookies, etc.)
+  credentials: true, // Enable credentials (cookies, etc.)  
 }
 // Middleware
 app.use(cors(corsOptions)) // Allows frontend to make API requests to your backend (http://localhost:5000)
@@ -50,6 +50,82 @@ app.get('/test-db', async (req, res) => {
       console.error('Database connection error: ', error.message)
       res.status(500).json({ error: 'Database connection failed.' })
     }
+})
+// Endpoint to register users
+app.post('/register', async (req, res) => {
+  const {username, email, password} = req.body
+  try {
+    // Check if user exists first
+    const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({Error: 'Email already exists, login or choose a different one.'})
+    }
+    // Hash password using bcrypt
+    const saltRounds = 10
+    const hashedPassword = await bcrypt.hash(password, saltRounds)
+
+    // Insert new user
+    const newUser = await pool.query(
+      `INSERT INTO users (username, email, password) 
+       VALUES ($1, $2, $3)
+       RETURNING uid, username, email, profile_path'
+      `, [username, email, hashedPassword]
+    )
+    res.status(201).json({
+      message: 'User registered successfully.',
+      user: result.rows[0]
+    })
+  } catch (error) {
+    console.error('Registration error: ', error.message)
+    res.status(500).json({error: 'Error during registration.'})
+  }
+})
+// Endpoint to login after registration
+app.post('/login', async (req, res) => {
+  const {email, password} = req.body
+  try {
+    const userResult = await pool.query(
+      'SELECT uid, username, email, password, profile_path FROM users WHERE email = $1', [email]
+    )
+    if (userResult.rows.length === 0) {
+      return res.status(400).json({error: 'Invalid email or password'})
+    }
+    const user = userResult.rows[0]
+    const validPassword = await bcrypt.compare(password, user.password)
+    if (!validPassword) {
+      return res.status(400).json({error: 'Invalid email or password.'})
+    }
+    const token = jwt.sign({uid: user.uid, email: user.email}, process.env.JWT_SECRET, 
+      {expiresIn: '10m',  
+    })
+    res.json({
+      token,
+      user: {
+        uid: user.uid,
+        username: user.username,
+        email: user.email,
+        profile_path: user.profile_path,
+      },
+    })
+  } catch (error) {
+    console.error('Login error: ', error.message)
+    res.status(500).json({error: 'Error during login.'})
+  }
+})
+// User profile data endpoint
+app.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT uid, username, email, profile_path FROM users WHERE uid = $1', [req.user.uid]
+    )
+    if (result.rows.length === 0) {
+      return res.status(400).json({error: 'User not found.'})
+    }
+    res.json(result.rows[0])
+  } catch (error) {
+    console.error('Fetch /me error: ', error.message)
+    res.status(500).json({error: 'Error fetching user data.'})
+  }
 })
 
 // Start the server
