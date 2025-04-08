@@ -5,6 +5,8 @@ const pool = require('./db') // Import the connection pool from db.js
 const bcrypt = require('bcrypt') // Import bcrypt for password hashing
 const jwt = require('jsonwebtoken') // Import jwt for authentication handling
 require('dotenv').config() // Get JWT secret from here
+const {encrypt} = require ('./encryption') // Encrypt method to encrypt vault's passwords
+const {decrypt} = require('./encryption') // Decrypt method to decrypt vault's passwords when fetching
 
 // Create an instance of express
 const app = express() // Main object of the server (express instance)
@@ -180,12 +182,13 @@ app.put('/passwords/:pid', authenticateToken, async (req, res) => {
     if (passwordEntry.uid != req.user.uid) {
       return res.status(403).json({error: 'Unauthorized to modify this password'})
     }
+    const encryptedPassword = encrypt(passwordEntry) // Encrypt password before adding it to database
     // Update password
     await pool.query(
       `UPDATE passwords
        SET name = $1, username = $2, password = $3, url = $4
        WHERE pid = $5`,
-       [name, username, password, url, pid]
+       [name, username, encryptedPassword, url, pid]
     )
     res.json({message: 'Password entry updated.'})
   } catch (error) {
@@ -213,7 +216,12 @@ app.get('/vaults/:vid/passwords', authenticateToken, async (req, res) => {
        WHERE vid = $1`,
        [vid]
     )
-    res.json(passwords.rows)
+    // Decrypt each password
+    const decryptedPasswords = passwords.rows.map(entry =>({
+      ...entry, 
+      password: decrypt(entry.password)
+    }))
+    res.json(decryptedPasswords)
   } catch (error) {
     console.error("Error fetching passwords: ", error.message)
     res.status(500).json({error: 'Could not fetch passwords.'})
