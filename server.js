@@ -182,7 +182,7 @@ app.put('/passwords/:pid', authenticateToken, async (req, res) => {
     if (passwordEntry.uid != req.user.uid) {
       return res.status(403).json({error: 'Unauthorized to modify this password'})
     }
-    const encryptedPassword = encrypt(passwordEntry) // Encrypt password before adding it to database
+    const encryptedPassword = encrypt(password) // Encrypt password before adding it to database
     // Update password
     await pool.query(
       `UPDATE passwords
