@@ -2,12 +2,14 @@ import { useState } from "react";
 
 interface UserInfoTabProps {
   username: string;
+  email: string;
   password: string;
   updatePassword: (newPassword: string) => void;
 }
 
 const UserInfoTab = ({
   username,
+  email,
   password,
   updatePassword,
 }: UserInfoTabProps) => {
@@ -40,6 +42,15 @@ const UserInfoTab = ({
         <div className="flex items-center gap-4">
           <p className="text-gray-800 mt-1 bg-gray-200 pl-2 py-1 pr-2 rounded">
             {username}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-gray-700 font-medium">Email</label>
+        <div className="flex items-center gap-4">
+          <p className="text-gray-800 mt-1 bg-gray-200 pl-2 py-1 pr-2 rounded">
+            {email}
           </p>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import PresetServiceTab from "../components/PresetServiceTab";
@@ -45,8 +46,10 @@ const Dashboard = () => {
 
   // Later: fetch from backend after login
   const [userInfo, setUserInfo] = useState({
-    username: "jp_user",
-    password: "mySecurePass123",
+    username: "",
+    email: "",
+    profile_path: null,
+    password: "",
   });
 
   // Later: fetch from backend after login with useEffect()
@@ -59,6 +62,38 @@ const Dashboard = () => {
     youtube: null,
     instagram: null,
   });
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
+      try {
+        const response = await fetch("http://localhost:5000/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error(data.error || "Failed to fetch user info");
+        } else {
+          setUserInfo({
+            username: data.username,
+            email: data.email,
+            profile_path: data.profile_path,
+            password: "placeholder", // placeholder, not sent from backend
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching user info:", err);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
 
   return (
     <div className="flex bg-gradient-to-r from-blue-200 to-indigo-100">
@@ -77,6 +112,7 @@ const Dashboard = () => {
         {selectedTab === "user" && (
           <UserInfoTab
             username={userInfo.username}
+            email={userInfo.email}
             password={userInfo.password}
             // Later: replace with api call
             updatePassword={(newPass) =>
