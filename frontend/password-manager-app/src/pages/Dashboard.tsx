@@ -55,7 +55,7 @@ const Dashboard = () => {
 
   // Later: fetch from backend after login with useEffect()
   const [presetData, setPresetData] = useState<
-    Record<string, { username: string; password: string } | null>
+    Record<string, { pid: number; username: string; password: string } | null>
   >({
     google: null,
     outlook: null,
@@ -152,6 +152,7 @@ const Dashboard = () => {
 
             if (presetKeys.includes(nameKey)) {
               newPresetData[nameKey] = {
+                pid: entry.pid,
                 username: entry.username,
                 password: entry.password,
               };
@@ -211,9 +212,48 @@ const Dashboard = () => {
             }
             savedCredentials={presetData[selectedTab]}
             // onSave will be a PUT request
-            onSave={(credentials) =>
-              setPresetData((prev) => ({ ...prev, [selectedTab]: credentials }))
-            }
+            onSave={async (credentials) => {
+              const current = presetData[selectedTab];
+              if (!current) return;
+              const token = localStorage.getItem("token");
+              if (!token) return;
+
+              try {
+                const response = await fetch(
+                  `http://localhost:5000/passwords/${current.pid}`,
+                  {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      name:
+                        selectedTab.charAt(0).toUpperCase() +
+                        selectedTab.slice(1),
+                      url: `https://${selectedTab}.com`, // or a real mapping later
+                      username: credentials.username,
+                      password: credentials.password,
+                    }),
+                  }
+                );
+
+                if (!response.ok) {
+                  console.error("Failed to update preset password.");
+                } else {
+                  setPresetData((prev) => ({
+                    ...prev,
+                    [selectedTab]: {
+                      pid: current.pid,
+                      username: credentials.username,
+                      password: credentials.password,
+                    },
+                  }));
+                }
+              } catch (err) {
+                console.error("Error saving preset password:", err);
+              }
+            }}
             // onReset will be a DELETE request
             onReset={() =>
               setPresetData((prev) => ({ ...prev, [selectedTab]: null }))
