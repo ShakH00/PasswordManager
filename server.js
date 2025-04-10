@@ -179,7 +179,7 @@ app.get("/vaults", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Could not retrieve vaults" });
   }
 });
-// Endpoint to modify passwords ########## UNTESTED #############
+// Endpoint to modify passwords
 app.put("/passwords/:pid", authenticateToken, async (req, res) => {
   const { pid } = req.params;
   const { name, username, password, url } = req.body;
@@ -247,6 +247,38 @@ app.get("/vaults/:vid/passwords", authenticateToken, async (req, res) => {
     res.status(500).json({ error: "Could not fetch passwords." });
   }
 });
+// Endpoint to add new password entries to vault
+app.post('/vaults/:vid/passwords', authenticateToken, async (req, res) => {
+  const {vid} = req.params
+  const {name, url, username, password} = req.body
+
+  try {
+    // Verify vault
+    const checkVault = await pool.query(
+      'SELECT * FROM vaults WHERE vid = $1 AND uid = $2',
+      [vid, req.user.uid]
+    )
+    if (checkVault.rows.length === 0) {
+      return res.status(403).json({error: 'Access denied'})
+    }
+    // Encrypt password
+    const encryptedPassword = encrypt(password)
+
+    const insert = await pool.query(
+      `INSERT INTO passwords (vid, name, url, username, password)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING pid, name, url, username`,
+      [vid, name, url, username, encryptedPassword]
+    )
+    res.status(201).json({
+      message: 'Password added',
+      password: insert.rows[0]
+    })
+  } catch (error) {
+    console.error('Error while adding password: ', error.message)
+    res.status(500).json({error: 'Failed to add password.'})
+  }
+})
 
 // Start the server
 app.listen(PORT, () => {
