@@ -1,0 +1,42 @@
+SQL STATEMENTS
+
+CREATE TABLE Users (
+    uid SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    password TEXT NOT NULL,
+    profile_path TEXT
+);
+
+CREATE TABLE Vaults (
+    vid SERIAL PRIMARY KEY,
+    uid INTEGER REFERENCES Users(uid) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Passwords (
+    pid SERIAL PRIMARY KEY,
+    vid INTEGER REFERENCES Vaults(vid) ON DELETE CASCADE,
+    name VARCHAR(100),
+    url TEXT,
+    username TEXT,
+    password TEXT NOT NULL
+);
+
+CREATE TABLE TwoFactorAuth (
+    pid INTEGER REFERENCES Passwords(pid) ON DELETE CASCADE,
+    type VARCHAR(50),
+    action TEXT,
+    date DATE,
+    time TIME,
+    ip_address INET,
+    PRIMARY KEY (pid, type)
+);
+
+CREATE TABLE Logs (
+    lid SERIAL PRIMARY KEY,
+    uid INTEGER REFERENCES Users(uid) ON DELETE CASCADE,
+    action TEXT,
+    date DATE,
+    time TIME
+);
