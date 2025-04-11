@@ -25,18 +25,48 @@ const Dashboard = () => {
     (s) => s.name.trim().toLowerCase() === "untitled service"
   );
 
-  // Later: POST to backend
-  const addCustomService = () => {
-    const id = crypto.randomUUID(); // Or use backend-generated ID later
-    const newService = {
-      id,
-      name: "Untitled Service",
-      username: "",
-      password: "",
-      icon: undefined,
-    };
-    setCustomServices((prev) => [newService, ...prev]);
-    setSelectedTab(`custom-${id}`);
+  const addCustomService = async () => {
+    if (!vaultId) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/vaults/${vaultId}/passwords`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: "Untitled Service",
+            url: "", // user can add/edit later
+            username: "",
+            password: "",
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error("Failed to create custom service:", data.error);
+      } else {
+        const newService = {
+          id: data.password.pid.toString(),
+          name: data.password.name,
+          username: data.password.username,
+          password: "", // not returned from backend
+          icon: undefined,
+        };
+        setCustomServices((prev) => [newService, ...prev]);
+        setSelectedTab(`custom-${newService.id}`);
+      }
+    } catch (err) {
+      console.error("Error adding custom service:", err);
+    }
   };
 
   // Should be backend ready
@@ -254,10 +284,48 @@ const Dashboard = () => {
                 console.error("Error saving preset password:", err);
               }
             }}
-            // onReset will be a DELETE request
-            onReset={() =>
-              setPresetData((prev) => ({ ...prev, [selectedTab]: null }))
-            }
+            onReset={async () => {
+              const current = presetData[selectedTab];
+              if (!current) return;
+              const token = localStorage.getItem("token");
+              if (!token) return;
+
+              try {
+                const response = await fetch(
+                  `http://localhost:5000/passwords/${current.pid}`,
+                  {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                      name:
+                        selectedTab.charAt(0).toUpperCase() +
+                        selectedTab.slice(1),
+                      url: `https://${selectedTab}.com`,
+                      username: "", // default username
+                      password: "", // reset password
+                    }),
+                  }
+                );
+
+                if (!response.ok) {
+                  console.error("Failed to reset preset password.");
+                } else {
+                  setPresetData((prev) => ({
+                    ...prev,
+                    [selectedTab]: {
+                      pid: current.pid,
+                      username: "",
+                      password: "",
+                    },
+                  }));
+                }
+              } catch (err) {
+                console.error("Error resetting preset password:", err);
+              }
+            }}
           />
         )}
         {selectedTab.startsWith("custom-") &&
@@ -273,13 +341,42 @@ const Dashboard = () => {
                 existingNames={customServices
                   .filter((s) => s.id !== serviceId)
                   .map((s) => s.name.trim().toLowerCase())}
-                onSave={(updated) => {
-                  setCustomServices((prev) =>
-                    prev.map((s) =>
-                      s.id === serviceId ? { ...s, ...updated } : s
-                    )
-                  );
-                  setEditingCustomId(null);
+                onSave={async (updated) => {
+                  const token = localStorage.getItem("token");
+                  if (!token) return;
+
+                  const pid = parseInt(serviceId);
+                  try {
+                    const response = await fetch(
+                      `http://localhost:5000/passwords/${pid}`,
+                      {
+                        method: "PUT",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          name: updated.name,
+                          url: "", // expose this in UI later
+                          username: updated.username,
+                          password: updated.password,
+                        }),
+                      }
+                    );
+
+                    if (!response.ok) {
+                      console.error("Failed to update custom service.");
+                    } else {
+                      setCustomServices((prev) =>
+                        prev.map((s) =>
+                          s.id === serviceId ? { ...s, ...updated } : s
+                        )
+                      );
+                      setEditingCustomId(null);
+                    }
+                  } catch (err) {
+                    console.error("Error saving custom service:", err);
+                  }
                 }}
                 onDelete={() => {
                   setCustomServices((prev) =>
