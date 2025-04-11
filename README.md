@@ -136,9 +136,10 @@ The goal is to create a password manager application to securely store passwords
 
 ### **NOTE:** 
 This only runs the FRONTEND of the project. 
-To have full functionality you also need to start the backend server and host your own PostgreSQL data base locally.
-To start the backend server for the first time you just have to type `npm i` then `node server.js`
 
+To have full functionality you also need to start the backend server and host your own PostgreSQL data base locally.
+
+To start the backend server for the first time you just have to type `npm i` then `node server.js`<br><br>
 
 1. **Clone the repository**:
     ```bash
