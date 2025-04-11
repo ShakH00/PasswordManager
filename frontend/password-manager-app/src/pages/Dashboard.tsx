@@ -227,10 +227,6 @@ const Dashboard = () => {
             username={userInfo.username}
             email={userInfo.email}
             password={userInfo.password}
-            // Later: replace with api call
-            updatePassword={(newPass) =>
-              setUserInfo((prev) => ({ ...prev, password: newPass }))
-            }
           />
         )}
         {["google", "outlook", "facebook", "youtube", "instagram"].includes(

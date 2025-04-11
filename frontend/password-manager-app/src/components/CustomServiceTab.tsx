@@ -63,7 +63,7 @@ const CustomServiceTab = ({
 
   const handleSave = () => {
     if (!name || !username || !password || !confirmPassword) {
-      setError("All fields except icon are required.");
+      setError("All fields are required.");
       return;
     }
 
@@ -158,25 +158,6 @@ const CustomServiceTab = ({
               className="w-full p-2 border rounded mt-1"
               required
             />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium">
-              Custom Icon (optional)
-            </label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setIconFile(e.target.files?.[0] || null)}
-              className="mt-1"
-            />
-            {previewIcon && (
-              <img
-                src={previewIcon}
-                alt="Icon preview"
-                className="h-12 w-12 rounded mt-2 object-contain"
-              />
-            )}
           </div>
 
           {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
