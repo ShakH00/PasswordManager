@@ -283,43 +283,47 @@ app.post("/vaults/:vid/passwords", authenticateToken, async (req, res) => {
 });
 // Endpoint for user to change main account's password
 app.put("/change-password", authenticateToken, async (req, res) => {
-  const {currentPassword, newPassword} = req.body
+  const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).json({error: "Current and new password needed to complete request."})
+    return res
+      .status(400)
+      .json({ error: "Current and new password needed to complete request." });
   }
   try {
     // Get user from DB
     const result = await pool.query(
-      "SELECT password FROM users WHERE uid = $1", [req.user.uid]
+      "SELECT password FROM users WHERE uid = $1",
+      [req.user.uid]
     );
     if (result.rows.length === 0) {
-      return res.status(400).json({error: "User not found"});
+      return res.status(400).json({ error: "User not found" });
     }
-    const storedHash = result.rows[0].password
+    const storedHash = result.rows[0].password;
 
     // Compare currentPassword with hash
-    const samePassword = await bcrypt.compare(currentPassword, storedHash)
+    const samePassword = await bcrypt.compare(currentPassword, storedHash);
     if (!samePassword) {
-      return res.status(400).json({error: "Current password is incorrect"})
+      return res.status(400).json({ error: "Current password is incorrect" });
     }
     // Hash new password
     const saltRounds = 10;
     const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
 
     // Update password in DB
-    await pool.query(
-      `UPDATE users SET password = $1 WHERE uid = $2`, [hashedNewPassword, req.user.uid]
-    )
-    res.json({message: "Password updated successfully."})
+    await pool.query(`UPDATE users SET password = $1 WHERE uid = $2`, [
+      hashedNewPassword,
+      req.user.uid,
+    ]);
+    res.json({ message: "Password updated successfully." });
   } catch (error) {
-    console.error("Password change error: ", error.message)
-    res.status(500).json({error: "Failed to update password"})
+    console.error("Password change error: ", error.message);
+    res.status(500).json({ error: "Failed to update password" });
   }
 });
 // Endpoint to delete passwords from vault
 app.delete("/passwords/:pid", authenticateToken, async (req, res) => {
-  const {pid} = req.params
+  const { pid } = req.params;
 
   try {
     // Verify password exists and belongs to user
@@ -327,24 +331,46 @@ app.delete("/passwords/:pid", authenticateToken, async (req, res) => {
       `SELECT p.pid, v.uid FROM passwords p
       JOIN vaults v ON p.vid = v.vid
       WHERE p.pid = $1
-      `, [pid]
-    )
+      `,
+      [pid]
+    );
     if (result.rows.length === 0) {
-      return res.status(404).json({error: "Password entry not found."})
+      return res.status(404).json({ error: "Password entry not found." });
     }
     const passwordEntry = result.rows[0];
 
     if (passwordEntry.uid !== req.user.uid) {
-      return res.status(400).json({error: "Unauthorized to delete this password"})
+      return res
+        .status(400)
+        .json({ error: "Unauthorized to delete this password" });
     }
     // Delete the password from DB
-    await pool.query(
-      `DELETE FROM passwords WHERE pid = $1`, [pid]
-    )
-    res.json({message: "Password deleted."})
+    await pool.query(`DELETE FROM passwords WHERE pid = $1`, [pid]);
+    res.json({ message: "Password deleted." });
   } catch (error) {
-    console.error("Erorr: ", error.message)
-    res.status(500).json({error: "Failed to delete password"})
+    console.error("Error: ", error.message);
+    res.status(500).json({ error: "Failed to delete password" });
+  }
+});
+
+// Verify password for checking stored passwords
+app.post("/verify-password", authenticateToken, async (req, res) => {
+  const { password } = req.body;
+  if (!password) {
+    return res.status(400).json({ error: "Password is required." });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT password FROM users WHERE uid = $1",
+      [req.user.uid]
+    );
+    const valid = await bcrypt.compare(password, result.rows[0].password);
+    if (!valid) return res.status(403).json({ error: "Incorrect password." });
+
+    res.json({ message: "Password verified." });
+  } catch (error) {
+    console.error("Verification error:", error.message);
+    res.status(500).json({ error: "Server error." });
   }
 });
 

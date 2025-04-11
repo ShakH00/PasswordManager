@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Info } from "lucide-react";
 
 interface CustomServiceTabProps {
   serviceId: string;
@@ -39,6 +40,7 @@ const CustomServiceTab = ({
     service.icon
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmAccountPassword, setConfirmAccountPassword] = useState("");
 
   useEffect(() => {
     setName(service.name);
@@ -197,17 +199,76 @@ const CustomServiceTab = ({
           </div>
 
           <div className="mb-6">
-            <p className="text-gray-700 font-medium">Password</p>
+            <label className="block text-gray-700 font-medium flex items-center gap-1">
+              Password
+              <span className="relative group cursor-help">
+                <Info size={16} className="text-gray-500" />
+                <span className="absolute left-6 top-1 w-max bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 whitespace-nowrap">
+                  Must enter account password to view saved password. <br />
+                </span>
+              </span>
+            </label>
             <div className="flex items-center gap-4 mt-1">
-              <p className="text-gray-800 mt-1 bg-gray-200 pl-2 py-1 pr-2 rounded">
-                {showPassword ? password : "*".repeat(password.length)}
-              </p>
-              <button
-                className="text-blue-600 text-sm"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? "Hide" : "Show"}
-              </button>
+              {showPassword ? (
+                <>
+                  <p className="text-gray-800 mt-1 bg-gray-200 pl-2 py-1 pr-2 rounded">
+                    {password}
+                  </p>
+                  <button
+                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    onClick={() => setShowPassword(false)}
+                  >
+                    Hide
+                  </button>
+                </>
+              ) : (
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="password"
+                    placeholder="Account password"
+                    className="border px-2 py-1 rounded text-sm"
+                    value={confirmAccountPassword}
+                    onChange={(e) => setConfirmAccountPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                    onClick={async () => {
+                      const token = localStorage.getItem("token");
+                      if (!token) return;
+
+                      try {
+                        const res = await fetch(
+                          "http://localhost:5000/verify-password",
+                          {
+                            method: "POST",
+                            headers: {
+                              "Content-Type": "application/json",
+                              Authorization: `Bearer ${token}`,
+                            },
+                            body: JSON.stringify({
+                              password: confirmAccountPassword,
+                            }),
+                          }
+                        );
+
+                        const result = await res.json();
+                        if (!res.ok) {
+                          alert(result.error || "Incorrect password.");
+                        } else {
+                          setShowPassword(true);
+                        }
+                      } catch (err) {
+                        alert("Error verifying password.");
+                      } finally {
+                        setConfirmAccountPassword("");
+                      }
+                    }}
+                  >
+                    Submit
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 

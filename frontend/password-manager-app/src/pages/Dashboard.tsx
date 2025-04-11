@@ -4,10 +4,13 @@ import Sidebar from "../components/Sidebar";
 import UserInfoTab from "../components/UserInfoTab";
 import PresetServiceTab from "../components/PresetServiceTab";
 import CustomServiceTab from "../components/CustomServiceTab";
+import PasswordUnlockModal from "../components/PasswordUnlockModal";
 
 const Dashboard = () => {
   const [editingCustomId, setEditingCustomId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState("user");
+  const [passwordUnlocked, setPasswordUnlocked] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [vaultId, setVaultId] = useState<number | null>(null);
   // Later: on creation or edit make api call
   // customServices should come from a fetch() call
@@ -207,6 +210,18 @@ const Dashboard = () => {
 
     fetchUserInfo();
   }, []);
+
+  {
+    showUnlockModal && (
+      <PasswordUnlockModal
+        onUnlock={() => {
+          setPasswordUnlocked(true);
+          setShowUnlockModal(false);
+        }}
+        onClose={() => setShowUnlockModal(false)}
+      />
+    );
+  }
 
   return (
     <div className="flex bg-gradient-to-r from-blue-200 to-indigo-100">
