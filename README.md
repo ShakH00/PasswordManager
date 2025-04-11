@@ -23,6 +23,11 @@ The goal is to create a password manager application to securely store passwords
   **Purpose:** Controller for database information.
 
 
+- `encryption.js`  
+  **Location:** Root directory
+  **Purpose:** Encrypts and decrypts sensitive strings like vault passwords using AES-256-CBC with a securely stored encryption key.
+
+
 - `package-lock.json`  
   **Location:** Root directory
   **Purpose:** Stores information for necessary packages in the system
@@ -36,6 +41,13 @@ The goal is to create a password manager application to securely store passwords
 - `server.js`  
   **Location:** Root directory
   **Purpose:** Runs the localhost server.
+
+
+### Root - SQL Directory
+- `CustomServiceTab.tsx`  
+  **Location:** SQL Directory
+  **Purpose:** This SQL file defines the relational database schema for a password manager, including users, vaults, stored credentials, 2FA logs, and activity tracking.
+
 
 ### Source directory 
 - `App.tsx`  
@@ -69,7 +81,7 @@ The goal is to create a password manager application to securely store passwords
 
 ### Source - Components directory
 - `CustomServiceTab.tsx`  
-  **Location:** Components directory
+  **Location:** Source/Components directory
   **Purpose:** Used to display and manage custom services (e.g., adding custom websites or services for storing passwords).
 
 
@@ -78,44 +90,56 @@ The goal is to create a password manager application to securely store passwords
   **Purpose:** Displays preset (pre-configured) services or websites where users can manage passwords (e.g., Google, Facebook).
 
 
+- `ProtectedRoute.tsx`  
+  **Location:** Source/Components directory
+  **Purpose:** Guards routes by checking for a valid token in local storage, redirecting unauthenticated users to the login page.
+
+
 - `ServiceTab.tsx`  
-  **Location:** Components directory
+  **Location:** Source/Components directory
   **Purpose:** A generic tab component that handles the display of either custom or preset services related to password management.
 
 
 - `Sidebar.tsx`  
-  **Location:** Components directory
+  **Location:** Source/Components directory
   **Purpose:** The sidebar handles the navigation across different sections or features of the password manager app.
 
 
 - `UserInfoTab.tsx`  
-  **Location:** Components directory
+  **Location:** Source/Components directory
   **Purpose:** Displays and manages user information, such as their profile details, settings, and account preferences.
 
 
 ### Source - Pages directory
 - `Dashboard.tsx`  
-  **Location:** Pages directory
+  **Location:** Source/Pages directory
   **Purpose:** The main user dashboard where users can view their saved passwords, manage settings, and navigate to other features.
 
 
 - `LandingPage.tsx`  
-  **Location:** Pages directory
+  **Location:** Source/Pages directory
   **Purpose:** The first page users see when they visit the app. Contains basic info about the app and buttons for login and signup.
 
 
-- `Poginpage.tsx`  
-  **Location:** Pages directory
+- `Loginpage.tsx`  
+  **Location:** Source/Pages directory
   **Purpose:** The login page where users can enter their credentials to access their password manager.
 
 
 - `SignUpPage.tsx`  
-  **Location:** Pages directory
+  **Location:** Source/Pages directory
   **Purpose:** The signup page where new users can create an account for the password manager.
 
 
 
 ## Running The Project:
+
+### **NOTE:** 
+This only runs the FRONTEND of the project. 
+To have full functionality you also need to start the backend server and host your own PostgreSQL data base locally.
+To start the backend server for the first time you just have to type `npm i` then `node server.js`
+
+
 1. **Clone the repository**:
     ```bash
     git clone https://github.com/ShakH00/PasswordManager.git
