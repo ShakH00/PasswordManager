@@ -143,7 +143,6 @@ const Dashboard = () => {
           console.error(vaults.error || "Failed to fetch vault");
         } else if (vaults.length > 0) {
           const vid = vaults[0].vid;
-          console.log("Fetched Vault ID:", vid);
           setVaultId(vid);
           fetchVaultPasswords(vid, token); // fetch the passwords now
         }
@@ -168,8 +167,6 @@ const Dashboard = () => {
         if (!response.ok) {
           console.error(data.error || "Failed to fetch passwords");
         } else {
-          console.log("Vault Passwords:", data);
-
           const presetKeys = [
             "google",
             "youtube",
