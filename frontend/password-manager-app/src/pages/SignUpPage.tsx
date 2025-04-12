@@ -10,11 +10,22 @@ const SignUpPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  const isStrongPassword = (password: string) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{15,}$/.test(password);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      setError(
+        "Password must be at least 15 characters and include uppercase, lowercase, a number, and a special character."
+      );
       return;
     }
 
@@ -102,6 +113,26 @@ const SignUpPage = () => {
           className="w-full p-3 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           required
         />
+
+        {password && (
+          <ul className="text-xs text-gray-600 mt-1 ml-1 space-y-1">
+            <li className={/[a-z]/.test(password) ? "text-green-600" : ""}>
+              • At least one lowercase letter
+            </li>
+            <li className={/[A-Z]/.test(password) ? "text-green-600" : ""}>
+              • At least one uppercase letter
+            </li>
+            <li className={/\d/.test(password) ? "text-green-600" : ""}>
+              • At least one number
+            </li>
+            <li className={/[\W_]/.test(password) ? "text-green-600" : ""}>
+              • At least one special character
+            </li>
+            <li className={password.length >= 15 ? "text-green-600" : ""}>
+              • At least 15 characters
+            </li>
+          </ul>
+        )}
 
         <input
           type="password"

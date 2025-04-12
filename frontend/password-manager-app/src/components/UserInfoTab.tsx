@@ -15,6 +15,10 @@ const UserInfoTab = ({ username, email }: UserInfoTabProps) => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const isStrongPassword = (password: string) => {
+    return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{15,}$/.test(password);
+  };
+
   const handleSave = async () => {
     setError("");
     setSuccess("");
@@ -25,7 +29,14 @@ const UserInfoTab = ({ username, email }: UserInfoTabProps) => {
     }
 
     if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("Passwords do not match");
+      return;
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      setError(
+        "Password must be at least 15 characters and include uppercase, lowercase, a number, and a special character."
+      );
       return;
     }
 
@@ -85,9 +96,9 @@ const UserInfoTab = ({ username, email }: UserInfoTabProps) => {
       <div className="mb-4">
         <label className="block text-gray-700 font-medium flex items-center gap-1">
           Password
-          <span className="relative group cursor-help">
+          <span className="relative group inline-block">
             <Info size={16} className="text-gray-500" />
-            <span className="absolute left-6 top-1 w-max bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10 whitespace-nowrap">
+            <span className="absolute left-6 top-1 w-max bg-black text-white text-xs px-2 py-1 rounded opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 z-10 whitespace-nowrap">
               Account password is hidden for security purposes. It is so if{" "}
               <br />
               someone hacks into your account without directly knowing your
@@ -122,6 +133,35 @@ const UserInfoTab = ({ username, email }: UserInfoTabProps) => {
               className="w-full p-2 border rounded mt-2"
               required
             />
+
+            {newPassword && (
+              <ul className="text-xs text-gray-600 mt-1 ml-1 space-y-1">
+                <li
+                  className={/[a-z]/.test(newPassword) ? "text-green-600" : ""}
+                >
+                  • At least one lowercase letter
+                </li>
+                <li
+                  className={/[A-Z]/.test(newPassword) ? "text-green-600" : ""}
+                >
+                  • At least one uppercase letter
+                </li>
+                <li className={/\d/.test(newPassword) ? "text-green-600" : ""}>
+                  • At least one number
+                </li>
+                <li
+                  className={/[\W_]/.test(newPassword) ? "text-green-600" : ""}
+                >
+                  • At least one special character
+                </li>
+                <li
+                  className={newPassword.length >= 15 ? "text-green-600" : ""}
+                >
+                  • At least 15 characters
+                </li>
+              </ul>
+            )}
+
             <input
               type="password"
               placeholder="Confirm Password"
