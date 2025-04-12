@@ -41,6 +41,8 @@ const CustomServiceTab = ({
   );
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmAccountPassword, setConfirmAccountPassword] = useState("");
+  const [showConfirmEdit, setShowConfirmEdit] = useState(false);
+  const [accountPassword, setAccountPassword] = useState("");
 
   useEffect(() => {
     setName(service.name);
@@ -167,7 +169,7 @@ const CustomServiceTab = ({
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
             >
               Save
             </button>
@@ -181,7 +183,7 @@ const CustomServiceTab = ({
                   setEditing(false); // exit editing mode
                 }
               }}
-              className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+              className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
             >
               Cancel
             </button>
@@ -215,7 +217,7 @@ const CustomServiceTab = ({
                     {password}
                   </p>
                   <button
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                     onClick={() => setShowPassword(false)}
                   >
                     Hide
@@ -232,7 +234,7 @@ const CustomServiceTab = ({
                   />
                   <button
                     type="button"
-                    className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                     onClick={async () => {
                       const token = localStorage.getItem("token");
                       if (!token) return;
@@ -274,14 +276,14 @@ const CustomServiceTab = ({
 
           <div className="flex gap-3">
             <button
-              onClick={() => setEditing(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => setShowConfirmEdit(true)}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
               Edit
             </button>
             <button
               onClick={() => setConfirmDelete(true)}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
             >
               Delete
             </button>
@@ -289,26 +291,133 @@ const CustomServiceTab = ({
         </>
       )}
 
-      {confirmDelete && (
+      {showConfirmEdit && (
         <div className="mt-4 border-t pt-4">
           <p className="text-sm text-gray-600 mb-2">
-            Are you sure you want to delete this service? Any data lost from
-            deletion cannot be recovered.
+            Please confirm your account password to edit <strong>{name}</strong>
+            .
           </p>
+          <input
+            type="password"
+            value={accountPassword}
+            onChange={(e) => setAccountPassword(e.target.value)}
+            placeholder="Enter your account password"
+            className="w-full p-2 border rounded mb-3"
+          />
           <div className="flex gap-3">
             <button
-              onClick={onDelete}
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              onClick={async () => {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+
+                try {
+                  const res = await fetch(
+                    "http://localhost:5000/verify-password",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ password: accountPassword }),
+                    }
+                  );
+
+                  const result = await res.json();
+                  if (!res.ok) {
+                    alert(result.error || "Incorrect password.");
+                  } else {
+                    setEditing(true);
+                    setShowConfirmEdit(false);
+                    setAccountPassword("");
+                  }
+                } catch (err) {
+                  alert("Error verifying password.");
+                }
+              }}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
-              Yes, Delete
+              Confirm
             </button>
             <button
-              onClick={() => setConfirmDelete(false)}
+              onClick={() => {
+                setShowConfirmEdit(false);
+                setAccountPassword("");
+              }}
               className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400"
             >
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {confirmDelete && (
+        <div className="mt-4 border-t pt-4">
+          <p className="text-sm text-gray-600 mb-2">
+            To confirm deletion of <strong>{name}</strong>, please enter your
+            account password.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const input = form.elements.namedItem(
+                "accountPassword"
+              ) as HTMLInputElement;
+              const password = input.value;
+              if (!password) return;
+
+              const token = localStorage.getItem("token");
+              if (!token) return;
+
+              try {
+                const res = await fetch(
+                  "http://localhost:5000/verify-password",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ password }),
+                  }
+                );
+
+                const result = await res.json();
+                if (!res.ok) {
+                  alert(result.error || "Incorrect password.");
+                } else {
+                  onDelete(); // proceed with deletion
+                }
+              } catch (err) {
+                alert("Error verifying password.");
+              }
+            }}
+          >
+            <input
+              type="password"
+              name="accountPassword"
+              placeholder="Enter your account password"
+              className="w-full border rounded p-2 mt-2"
+              required
+            />
+            <div className="flex gap-3 mt-3">
+              <button
+                type="submit"
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              >
+                Confirm Deletion
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

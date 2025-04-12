@@ -26,6 +26,8 @@ const PresetServiceTab = ({
   const [error, setError] = useState("");
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const [confirmAccountPassword, setConfirmAccountPassword] = useState("");
+  const [showConfirmEdit, setShowConfirmEdit] = useState(false);
+  const [accountPassword, setAccountPassword] = useState("");
 
   const handleSave = () => {
     if (!username || !password || !confirmPassword) {
@@ -97,7 +99,7 @@ const PresetServiceTab = ({
                     {password}
                   </p>
                   <button
-                    className="bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
                     onClick={() => setShowPassword(false)}
                   >
                     Hide
@@ -113,7 +115,7 @@ const PresetServiceTab = ({
                     onChange={(e) => setConfirmAccountPassword(e.target.value)}
                   />
                   <button
-                    className="bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                    className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
                     onClick={async () => {
                       const token = localStorage.getItem("token");
                       if (!token) return;
@@ -155,14 +157,14 @@ const PresetServiceTab = ({
 
           <div className="flex gap-3">
             <button
-              onClick={() => setEditing(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              onClick={() => setShowConfirmEdit(true)}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
-              Change Info
+              Edit
             </button>
             <button
               onClick={() => setShowConfirmReset(true)}
-              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
             >
               Reset
             </button>
@@ -218,35 +220,153 @@ const PresetServiceTab = ({
           <div className="flex gap-3">
             <button
               onClick={handleSave}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
             >
               Save
+            </button>
+            <button
+              onClick={() => {
+                setEditing(false);
+                setUsername(savedCredentials?.username || "");
+                setPassword(savedCredentials?.password || "");
+                setConfirmPassword("");
+                setError("");
+              }}
+              className="bg-gray-400 text-white px-3 py-1 rounded hover:bg-gray-500"
+            >
+              Cancel
             </button>
           </div>
         </>
       )}
 
-      {showConfirmReset && (
+      {showConfirmEdit && (
         <div className="mt-4 border-t pt-4">
           <p className="text-sm text-gray-600 mb-2">
-            Are you sure you want to reset credentials for{" "}
-            <strong>{serviceName}</strong>? Any data lost by resetting cannot be
-            recovered.
+            Enter your account password to modify <strong>{serviceName}</strong>
+            's credentials.
           </p>
+          <input
+            type="password"
+            value={accountPassword}
+            onChange={(e) => setAccountPassword(e.target.value)}
+            placeholder="Enter your account password"
+            className="w-full p-2 border rounded mb-3"
+          />
           <div className="flex gap-3">
             <button
-              onClick={handleReset}
-              className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              onClick={async () => {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+
+                try {
+                  const res = await fetch(
+                    "http://localhost:5000/verify-password",
+                    {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({ password: accountPassword }),
+                    }
+                  );
+
+                  const result = await res.json();
+                  if (!res.ok) {
+                    alert(result.error || "Incorrect password.");
+                  } else {
+                    setEditing(true);
+                    setShowConfirmEdit(false);
+                    setAccountPassword("");
+                  }
+                } catch (err) {
+                  alert("Error verifying password.");
+                }
+              }}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
-              Yes, Reset
+              Confirm
             </button>
             <button
-              onClick={() => setShowConfirmReset(false)}
+              onClick={() => {
+                setShowConfirmEdit(false);
+                setAccountPassword("");
+              }}
               className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400"
             >
               Cancel
             </button>
           </div>
+        </div>
+      )}
+
+      {showConfirmReset && (
+        <div className="mt-4 border-t pt-4">
+          <p className="text-sm text-gray-600 mb-2">
+            To reset <strong>{serviceName}</strong> credentials, please enter
+            your account password.
+          </p>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const form = e.target as HTMLFormElement;
+              const input = form.elements.namedItem(
+                "accountPassword"
+              ) as HTMLInputElement;
+              const password = input.value;
+              if (!password) return;
+
+              const token = localStorage.getItem("token");
+              if (!token) return;
+
+              try {
+                const res = await fetch(
+                  "http://localhost:5000/verify-password",
+                  {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ password }),
+                  }
+                );
+
+                const result = await res.json();
+                if (!res.ok) {
+                  alert(result.error || "Incorrect password.");
+                } else {
+                  handleReset(); // call your original reset logic
+                }
+              } catch (err) {
+                alert("Error verifying password.");
+              }
+            }}
+          >
+            <input
+              type="password"
+              name="accountPassword"
+              placeholder="Enter your account password"
+              className="w-full border rounded p-2 mt-2"
+              required
+            />
+            <div className="flex gap-3 mt-3">
+              <button
+                type="submit"
+                className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+              >
+                Confirm Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirmReset(false)}
+                className="bg-gray-300 text-gray-800 px-3 py-1 rounded hover:bg-gray-400"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

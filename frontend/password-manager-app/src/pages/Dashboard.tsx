@@ -389,11 +389,33 @@ const Dashboard = () => {
                     console.error("Error saving custom service:", err);
                   }
                 }}
-                onDelete={() => {
-                  setCustomServices((prev) =>
-                    prev.filter((s) => s.id !== serviceId)
-                  );
-                  setEditingCustomId(null);
+                onDelete={async () => {
+                  const token = localStorage.getItem("token");
+                  if (!token) return;
+
+                  try {
+                    const response = await fetch(
+                      `http://localhost:5000/passwords/${serviceId}`,
+                      {
+                        method: "DELETE",
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+
+                    if (!response.ok) {
+                      console.error("Failed to delete custom service.");
+                      return;
+                    }
+
+                    setCustomServices((prev) =>
+                      prev.filter((s) => s.id !== serviceId)
+                    );
+                    setEditingCustomId(null);
+                  } catch (err) {
+                    console.error("Error deleting custom service:", err);
+                  }
                 }}
                 setEditingCustomId={setEditingCustomId}
               />
