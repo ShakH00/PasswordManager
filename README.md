@@ -44,7 +44,7 @@ The goal is to create a password manager application to securely store passwords
 
 
 ### Root - SQL Directory
-- `CustomServiceTab.tsx`  
+- `SQL_STATEMENTS.txt`  
   **Location:** SQL Directory
   **Purpose:** This SQL file defines the relational database schema for a password manager, including users, vaults, stored credentials, 2FA logs, and activity tracking.
 
@@ -83,6 +83,11 @@ The goal is to create a password manager application to securely store passwords
 - `CustomServiceTab.tsx`  
   **Location:** Source/Components directory
   **Purpose:** Used to display and manage custom services (e.g., adding custom websites or services for storing passwords).
+
+
+- `PasswordUnlockModal.tsx`  
+  **Location:** Source/Components directory
+  **Purpose:** A password modal verifies user input via API, displays errors, and triggers unlock or close actions.
 
 
 - `PresetServiceTab.tsx`  
