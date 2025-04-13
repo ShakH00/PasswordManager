@@ -144,6 +144,18 @@ This only runs the FRONTEND of the project.
 
 To have full functionality you also need to start the backend server and host your own PostgreSQL data base locally.
 
+The backend also requires a .env file in the root project directory to run. This is in `.gitignore` for security reasons. Here is a sample of how your .env file should look if you wish to run the project:
+```bash
+DB_PASSWORD=yourDatabasePassword
+DB_USER=yourDatabaseUsername
+DB_HOST=localhost
+DB_DATABASE=nameOfDatabase
+DB_PORT=5432
+
+JWT_SECRET=your_super_super_secret_JWT_key
+ENCRYPTION_SECRET=your_super_super_secret_32byte_ecryption_key (64 hexadecimal characters)
+```
+
 To start the backend server for the first time you just have to type `npm i` then `node server.js`<br><br>
 
 1. **Clone the repository**:
